@@ -28,6 +28,7 @@ export function csgIntersect(meshA: THREE.Mesh, meshB: THREE.Mesh): THREE.Mesh {
   const result = evaluator.evaluate(brushA, brushB, INTERSECTION)
   let out = (result.geometry as THREE.BufferGeometry).clone()
   out = mergeVertices(out)
+  out = out.toNonIndexed()
   out.computeVertexNormals()
   out.computeBoundingBox()
 
@@ -55,6 +56,7 @@ export function csgSubtract(meshA: THREE.Mesh, meshB: THREE.Mesh): THREE.Mesh {
   const result = evaluator.evaluate(brushA, brushB, SUBTRACTION)
   let out = (result.geometry as THREE.BufferGeometry).clone()
   out = mergeVertices(out)
+  out = out.toNonIndexed()
   out.computeVertexNormals()
   out.computeBoundingBox()
 
@@ -93,6 +95,7 @@ export async function csgUnionMeshes(
 
   let out = (resultBrush.geometry as THREE.BufferGeometry).clone()
   out = mergeVertices(out)
+  out = out.toNonIndexed()
   out.computeVertexNormals()
   out.computeBoundingBox()
 
