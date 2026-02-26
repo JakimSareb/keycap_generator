@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import { Brush, Evaluator, SUBTRACTION, ADDITION, INTERSECTION } from 'three-bvh-csg'
+import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { createKeycapMaterial, KEYCAP_BODY_COLOR } from './materials'
 
 export function makeMesh(geometry: THREE.BufferGeometry, color = KEYCAP_BODY_COLOR): THREE.Mesh {
@@ -25,7 +26,8 @@ export function csgIntersect(meshA: THREE.Mesh, meshB: THREE.Mesh): THREE.Mesh {
   brushB.updateMatrixWorld()
 
   const result = evaluator.evaluate(brushA, brushB, INTERSECTION)
-  const out = (result.geometry as THREE.BufferGeometry).clone()
+  let out = (result.geometry as THREE.BufferGeometry).clone()
+  out = mergeVertices(out)
   out.computeVertexNormals()
   out.computeBoundingBox()
 
@@ -51,7 +53,8 @@ export function csgSubtract(meshA: THREE.Mesh, meshB: THREE.Mesh): THREE.Mesh {
   brushB.updateMatrixWorld()
 
   const result = evaluator.evaluate(brushA, brushB, SUBTRACTION)
-  const out = (result.geometry as THREE.BufferGeometry).clone()
+  let out = (result.geometry as THREE.BufferGeometry).clone()
+  out = mergeVertices(out)
   out.computeVertexNormals()
   out.computeBoundingBox()
 
@@ -88,7 +91,8 @@ export async function csgUnionMeshes(
     resultBrush.updateMatrixWorld()
   }
 
-  const out = (resultBrush.geometry as THREE.BufferGeometry).clone()
+  let out = (resultBrush.geometry as THREE.BufferGeometry).clone()
+  out = mergeVertices(out)
   out.computeVertexNormals()
   out.computeBoundingBox()
 
