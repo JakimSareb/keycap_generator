@@ -15,6 +15,9 @@ export default defineConfig({
     return isGhPages && repo ? `/${repo}/` : '/'
   })(),
   plugins: [svelte(), tailwindcss()],
+  worker: {
+    format: 'es',
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),

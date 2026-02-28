@@ -176,7 +176,7 @@ export async function buildKeycapGroup(
 
   if (checkCancelled) await checkCancelled()
 
-  const bodyResult = unionExtrusion ? csgSubtract(baseMesh, unionExtrusion) : baseMesh
+  const bodyResult = unionExtrusion ? await csgSubtract(baseMesh, unionExtrusion) : baseMesh
 
   if (checkCancelled) await checkCancelled()
 
@@ -187,7 +187,7 @@ export async function buildKeycapGroup(
   for (let j = 0; j < symbolMeshes.length; j++) {
     if (checkCancelled) await checkCancelled()
     const tr = symbolMeshes[j]
-    const r = csgIntersect(baseMesh, tr.mesh)
+    const r = await csgIntersect(baseMesh, tr.mesh)
     r.material = tr.mesh.material
     r.name = tr.name || `symbol_${j}`
     group.add(r)
