@@ -3,25 +3,11 @@ import { stlBuffersByModelId } from './sessionAssets'
 import type { AppState, KeyDef, KeycapModel, Template, CustomFont } from './types'
 import { getPublicPath } from '../utils/paths'
 
+const CANONICAL_PROJECT_STL_PREFIX = '/keycap_generator/stls/'
+
 export function applyLoadedProject(project: AppState) {
   stlBuffersByModelId.set({})
   app.set(project)
-}
-
-function normalizeModelUrls(keycapModels: KeycapModel[]): KeycapModel[] {
-  return keycapModels.map(m => {
-    if (m.source.kind === 'server' && m.source.url.startsWith('/')) {
-      const pathWithoutLeadingSlash = m.source.url.slice(1)
-      return {
-        ...m,
-        source: {
-          ...m.source,
-          url: getPublicPath(pathWithoutLeadingSlash),
-        },
-      }
-    }
-    return m
-  })
 }
 
 function prepareForExport(state: AppState): Omit<AppState, 'ui'> {
@@ -33,7 +19,10 @@ function prepareForExport(state: AppState): Omit<AppState, 'ui'> {
       if (m.source.kind === 'upload') {
         return { ...m, source: { ...m.source, stl: m.source.stl ? { ...m.source.stl } : null } }
       }
-      return { ...m, source: { ...m.source, stl: { ...m.source.stl } } }
+      const stlsIndex = m.source.url.indexOf('stls/')
+      const canonicalUrl =
+        stlsIndex !== -1 ? `${CANONICAL_PROJECT_STL_PREFIX}${m.source.url.slice(stlsIndex + 5)}` : m.source.url
+      return { ...m, source: { ...m.source, url: canonicalUrl, stl: { ...m.source.stl } } }
     }),
   }
 }
@@ -56,17 +45,14 @@ function parseProjectV1(raw: unknown): AppState | null {
     return null
   if (!Array.isArray(project.customFonts)) return null
 
-  // Normalize URLs in keycap models to handle preset files
-  const normalizedModels = normalizeModelUrls(project.keycapModels)
-
   return {
     version: 1,
-    keycapModels: normalizedModels,
+    keycapModels: project.keycapModels,
     templates: project.templates,
     keys: project.keys,
     customFonts: project.customFonts,
     ui: {
-      selectedKeycapModelId: normalizedModels[0]?.id ?? null,
+      selectedKeycapModelId: project.keycapModels[0]?.id ?? null,
       selectedTemplateId: project.templates[0]?.id ?? null,
       selectedKeyId: project.keys[0]?.id ?? null,
     },

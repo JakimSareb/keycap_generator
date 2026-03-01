@@ -9,7 +9,7 @@
       "source": {
         "kind": "server",
         "serverId": "JoeScotto_Scooped_MX_1_00u__Concave__stl",
-        "url": "/stls/JoeScotto_Scooped_MX/1.00u (Concave).stl",
+        "url": "/keycap_generator/stls/JoeScotto_Scooped_MX/1.00u (Concave).stl",
         "stl": {
           "fileName": "1.00u (Concave).stl",
           "pathHint": "server:JoeScotto_Scooped_MX_1_00u__Concave__stl"
@@ -28,7 +28,7 @@
       "source": {
         "kind": "server",
         "serverId": "JoeScotto_Scooped_MX_1_25u__Concave__stl",
-        "url": "/stls/JoeScotto_Scooped_MX/1.25u (Concave).stl",
+        "url": "/keycap_generator/stls/JoeScotto_Scooped_MX/1.25u (Concave).stl",
         "stl": {
           "fileName": "1.25u (Concave).stl",
           "pathHint": "server:JoeScotto_Scooped_MX_1_25u__Concave__stl"
@@ -47,7 +47,7 @@
       "source": {
         "kind": "server",
         "serverId": "JoeScotto_Scooped_MX_2_00u__Concave__stl",
-        "url": "/stls/JoeScotto_Scooped_MX/2.00u (Concave).stl",
+        "url": "/keycap_generator/stls/JoeScotto_Scooped_MX/2.00u (Concave).stl",
         "stl": {
           "fileName": "2.00u (Concave).stl",
           "pathHint": "server:JoeScotto_Scooped_MX_2_00u__Concave__stl"
@@ -66,7 +66,7 @@
       "source": {
         "kind": "server",
         "serverId": "JoeScotto_Scooped_MX_2_25u__Concave__stl",
-        "url": "/stls/JoeScotto_Scooped_MX/2.25u (Concave).stl",
+        "url": "/keycap_generator/stls/JoeScotto_Scooped_MX/2.25u (Concave).stl",
         "stl": {
           "fileName": "2.25u (Concave).stl",
           "pathHint": "server:JoeScotto_Scooped_MX_2_25u__Concave__stl"
@@ -85,7 +85,7 @@
       "source": {
         "kind": "server",
         "serverId": "JoeScotto_Scooped_MX_2_75u__Concave__stl",
-        "url": "/stls/JoeScotto_Scooped_MX/2.75u (Concave).stl",
+        "url": "/keycap_generator/stls/JoeScotto_Scooped_MX/2.75u (Concave).stl",
         "stl": {
           "fileName": "2.75u (Concave).stl",
           "pathHint": "server:JoeScotto_Scooped_MX_2_75u__Concave__stl"
@@ -104,7 +104,7 @@
       "source": {
         "kind": "server",
         "serverId": "JoeScotto_Scooped_MX_6_25u__Concave__stl",
-        "url": "/stls/JoeScotto_Scooped_MX/6.25u (Concave).stl",
+        "url": "/keycap_generator/stls/JoeScotto_Scooped_MX/6.25u (Concave).stl",
         "stl": {
           "fileName": "6.25u (Concave).stl",
           "pathHint": "server:JoeScotto_Scooped_MX_6_25u__Concave__stl"

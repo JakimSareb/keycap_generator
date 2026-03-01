@@ -9,7 +9,7 @@
       "source": {
         "kind": "server",
         "serverId": "JoeScotto_Flat_1.00u",
-        "url": "/stls/JoeScotto_Flat/1.00u.stl",
+        "url": "/keycap_generator/stls/JoeScotto_Flat/1.00u.stl",
         "stl": {
           "fileName": "1.00u.stl",
           "pathHint": "server:JoeScotto_Flat_1.00u"
@@ -28,7 +28,7 @@
       "source": {
         "kind": "server",
         "serverId": "JoeScotto_Flat_2.00u",
-        "url": "/stls/JoeScotto_Flat/2.00u.stl",
+        "url": "/keycap_generator/stls/JoeScotto_Flat/2.00u.stl",
         "stl": {
           "fileName": "2.00u.stl",
           "pathHint": "server:JoeScotto_Flat_2.00u"
