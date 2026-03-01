@@ -112,3 +112,36 @@ export async function csgUnionMeshes(
   result.delete()
   return out
 }
+
+function manifoldToGeometry(manifold: ManifoldType): THREE.BufferGeometry {
+  const m = manifold.getMesh()
+  const numProp = m.numProp
+  const numVerts = m.numVert
+
+  const positions = new Float32Array(numVerts * 3)
+  for (let i = 0; i < numVerts; i++) {
+    positions[i * 3] = m.vertProperties[i * numProp]
+    positions[i * 3 + 1] = m.vertProperties[i * numProp + 1]
+    positions[i * 3 + 2] = m.vertProperties[i * numProp + 2]
+  }
+
+  const geom = new THREE.BufferGeometry()
+  geom.setAttribute('position', new THREE.BufferAttribute(positions, 3))
+  geom.setIndex(new THREE.BufferAttribute(new Uint32Array(m.triVerts), 1))
+  geom.computeVertexNormals()
+  geom.computeBoundingBox()
+  return geom
+}
+
+export async function extrudePolygonsToGeometry(
+  polygons: Array<Array<[number, number]>>,
+  height: number
+): Promise<THREE.BufferGeometry> {
+  const module = await getManifold()
+  const crossSection = module.CrossSection.ofPolygons(polygons as any)
+  const manifold = module.Manifold.extrude(crossSection, height)
+  crossSection.delete()
+  const geom = manifoldToGeometry(manifold)
+  manifold.delete()
+  return geom
+}

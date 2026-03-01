@@ -314,7 +314,7 @@
 
   {#if isGenerating}
     <ProcessingModal
-      title="Generating Keycaps"
+      title={currentKey ? `Generating: ${currentKey.name}` : 'Generating Keycaps'}
       onCancel={onCancelGenerate}
       current={progressCurrent}
       total={progressTotal}

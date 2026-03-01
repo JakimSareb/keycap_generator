@@ -9,46 +9,6 @@ function createWorker(name?: string): Worker {
   })
 }
 
-interface WorkerHandle {
-  worker: Worker
-  terminate: () => void
-}
-
-function setupWorker(name: string, signal: AbortSignal | undefined, onAbort: () => void): WorkerHandle {
-  const worker = createWorker(name)
-  let terminated = false
-
-  const abortHandler = () => {
-    if (terminated) return
-    try {
-      worker.postMessage({ type: 'cancel' })
-    } catch {
-      // Ignore errors during abort
-    }
-    onAbort()
-  }
-
-  if (signal) {
-    if (signal.aborted) {
-      abortHandler()
-    } else {
-      signal.addEventListener('abort', abortHandler, { once: true })
-    }
-  }
-
-  return {
-    worker,
-    terminate: () => {
-      if (terminated) return
-      terminated = true
-      if (signal) {
-        signal.removeEventListener('abort', abortHandler)
-      }
-      worker.terminate()
-    },
-  }
-}
-
 export interface BatchOptions {
   state: AppState
   stlBuffersByModelId: Record<string, ArrayBuffer | null>
@@ -61,6 +21,7 @@ export function generateBatch(options: BatchOptions): Promise<void> {
 
   return new Promise((resolve, reject) => {
     const workers: Worker[] = []
+    const lastStartedKeyIdByWorker = new Map<Worker, string>()
     let cancelled = false
     let zipWorker: Worker | null = null
 
@@ -172,7 +133,12 @@ export function generateBatch(options: BatchOptions): Promise<void> {
       worker.onmessage = (e: MessageEvent<WorkerResponse>) => {
         const { type, payload } = e.data
 
-        if (type === 'batch-progress') {
+        if (type === 'batch-item-start') {
+          if (!cancelled) {
+            lastStartedKeyIdByWorker.set(worker, payload.keyId)
+            onProgress?.({ current: completed, total, keyId: payload.keyId })
+          }
+        } else if (type === 'batch-progress') {
           if (!cancelled) {
             completed++
             onProgress?.({ current: completed, total, keyId: payload.keyId })
@@ -189,7 +155,8 @@ export function generateBatch(options: BatchOptions): Promise<void> {
           if (!cancelled) {
             cancelled = true
             terminateAll()
-            reject(new Error(payload.message))
+            const keyContext = getKeyContextMessage(state, lastStartedKeyIdByWorker.get(worker))
+            reject(new Error(withKeyContext(payload.message, keyContext)))
           }
         }
       }
@@ -200,7 +167,8 @@ export function generateBatch(options: BatchOptions): Promise<void> {
           const errorEvent = error as ErrorEvent
           const errorMsg = errorEvent.message || 'Worker failed'
           terminateAll()
-          reject(new Error(`Worker failed: ${errorMsg}`))
+          const keyContext = getKeyContextMessage(state, lastStartedKeyIdByWorker.get(worker))
+          reject(new Error(withKeyContext(`Worker failed: ${errorMsg}`, keyContext)))
         }
       }
 
@@ -219,6 +187,26 @@ export function generateBatch(options: BatchOptions): Promise<void> {
       onProgress({ current: 0, total, keyId: state.keys[0].id })
     }
   })
+}
+
+function getKeyContextMessage(state: AppState, keyId: string | undefined): string | null {
+  if (!keyId || keyId === '__template__') return null
+
+  const key = state.keys.find(k => k.id === keyId)
+  if (!key) return `key id: ${keyId}`
+
+  const template = state.templates.find(t => t.id === key.templateId)
+  const model = template ? state.keycapModels.find(m => m.id === template.keycapModelId) : null
+
+  const templatePart = template ? `, template: "${template.name}" (${template.id})` : ''
+  const modelPart = model ? `, model: "${model.name}" (${model.id})` : ''
+  return `key: "${key.name}" (${key.id})${templatePart}${modelPart}`
+}
+
+function withKeyContext(message: string, keyContext: string | null): string {
+  if (!keyContext) return message
+  if (message.includes('key "') || message.includes('key id "') || message.includes('key: "')) return message
+  return `${message} (${keyContext})`
 }
 
 function downloadBytes(bytes: Uint8Array, fileName: string, mime = 'application/octet-stream') {

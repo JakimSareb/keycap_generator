@@ -14,6 +14,7 @@ import { registerCustomFonts } from './fonts'
 import {
   type GenerationInput,
   BaseGeometryCache,
+  type ResolvedKeycap,
   resolveKeycap,
   safeFileName,
   buildKeycapGroup,
@@ -36,6 +37,7 @@ export interface ZipPayload {
 }
 
 export type WorkerResponse =
+  | { type: 'batch-item-start'; payload: { keyId: string } }
   | { type: 'batch-progress'; payload: { keyId: string } }
   | { type: 'batch-complete'; payload: { files: Record<string, Uint8Array> } }
   | { type: 'preview-complete'; payload: { geometry: any } }
@@ -82,18 +84,20 @@ async function handlePreviewGeneration(
   const resolved = resolveKeycap(state, item)
   if (!resolved) throw new Error('Failed to resolve keycap')
 
-  const baseGeom = await geometryCache.get(resolved.model, stlBuffersByModelId)
-  checkCancelled('Generation cancelled')
+  try {
+    const baseGeom = await geometryCache.get(resolved.model, stlBuffersByModelId)
+    checkCancelled('Generation cancelled')
 
-  const group = await buildKeycapGroup(state, resolved, baseGeom, () =>
-    yieldWithCancellationCheck('Generation cancelled')
-  )
+    const group = await buildKeycapGroup(resolved, baseGeom, () => yieldWithCancellationCheck('Generation cancelled'))
 
-  // Use JSON export for preview to avoid 3MF overhead/issues
-  const json = group.toJSON()
+    // Use JSON export for preview to avoid 3MF overhead/issues
+    const json = group.toJSON()
 
-  if (!cancelled) {
-    self.postMessage({ type: 'preview-complete', payload: { geometry: json } } satisfies WorkerResponse)
+    if (!cancelled) {
+      self.postMessage({ type: 'preview-complete', payload: { geometry: json } } satisfies WorkerResponse)
+    }
+  } catch (error) {
+    throw new Error(`${formatResolvedKeycapContext('Preview failed for', resolved)}: ${asErrorMessage(error)}`)
   }
 }
 
@@ -108,29 +112,40 @@ async function handleBatchGeneration(
   for (const item of items) {
     checkCancelled('Generation cancelled')
 
-    const resolved = resolveKeycap(state, item)
-    if (!resolved) continue
-
-    const baseGeom = await geometryCache.get(resolved.model, stlBuffersByModelId)
-    checkCancelled('Generation cancelled')
-
-    const group = await buildKeycapGroup(state, resolved, baseGeom, () =>
-      yieldWithCancellationCheck('Generation cancelled')
-    )
-
-    const blob = await exportTo3MF(group)
-    const arrayBuffer = await blob.arrayBuffer()
-
-    // Generate filename with index for ordering
-    const keyIndex = state.keys.findIndex(k => k.id === resolved.key.id) + 1
-    const filename = `${keyIndex}. ${safeFileName(resolved.key.name)}.3mf`
-    files[filename] = new Uint8Array(arrayBuffer)
-
-    // Report progress
     self.postMessage({
-      type: 'batch-progress',
-      payload: { keyId: resolved.key.id },
+      type: 'batch-item-start',
+      payload: { keyId: item.kind === 'keyId' ? item.keyId : '__template__' },
     } satisfies WorkerResponse)
+
+    let resolved: ResolvedKeycap | null = null
+    try {
+      resolved = resolveKeycap(state, item)
+      if (!resolved) throw new Error(`Failed to resolve keycap from ${formatGenerationInput(item)}`)
+
+      const baseGeom = await geometryCache.get(resolved.model, stlBuffersByModelId)
+      checkCancelled('Generation cancelled')
+
+      const group = await buildKeycapGroup(resolved, baseGeom, () => yieldWithCancellationCheck('Generation cancelled'))
+
+      const blob = await exportTo3MF(group)
+      const arrayBuffer = await blob.arrayBuffer()
+
+      // Generate filename with index for ordering
+      const keyIndex = state.keys.findIndex(k => k.id === resolved.key.id) + 1
+      const filename = `${keyIndex}. ${safeFileName(resolved.key.name)}.3mf`
+      files[filename] = new Uint8Array(arrayBuffer)
+
+      // Report progress
+      self.postMessage({
+        type: 'batch-progress',
+        payload: { keyId: resolved.key.id },
+      } satisfies WorkerResponse)
+    } catch (error) {
+      if (resolved) {
+        throw new Error(`${formatResolvedKeycapContext('Generation failed for', resolved)}: ${asErrorMessage(error)}`)
+      }
+      throw new Error(`Generation failed for ${formatGenerationInput(item)}: ${asErrorMessage(error)}`)
+    }
   }
 
   checkCancelled('Generation cancelled')
@@ -139,6 +154,19 @@ async function handleBatchGeneration(
     const transfers = Object.values(files).map(u => u.buffer)
     self.postMessage({ type: 'batch-complete', payload: { files } } satisfies WorkerResponse, transfers)
   }
+}
+
+function asErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : 'Unknown error'
+}
+
+function formatResolvedKeycapContext(prefix: string, resolved: ResolvedKeycap): string {
+  return `${prefix} key "${resolved.key.name}" (id: ${resolved.key.id}), template "${resolved.template.name}" (id: ${resolved.template.id}), model "${resolved.model.name}" (id: ${resolved.model.id})`
+}
+
+function formatGenerationInput(item: GenerationInput): string {
+  if (item.kind === 'keyId') return `key id "${item.keyId}"`
+  return `template "${item.template.name}" (id: ${item.template.id})`
 }
 
 async function handleZip(payload: ZipPayload): Promise<void> {

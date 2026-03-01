@@ -109,7 +109,6 @@ export class BaseGeometryCache {
 }
 
 export async function buildKeycapGroup(
-  state: AppState,
   resolved: ResolvedKeycap,
   baseGeom: BufferGeometry,
   checkCancelled?: CancellationCheck
@@ -149,7 +148,7 @@ export async function buildKeycapGroup(
       const iconPath = await loadRawIconPath(baseName, variant)
       if (!iconPath) continue
 
-      symbolGeom = createIconGeometry(iconPath, sym.fontSizeMm, model.extrusionDepthMm, PHOSPHOR_ICON_VIEWBOX)
+      symbolGeom = await createIconGeometry(iconPath, sym.fontSizeMm, model.extrusionDepthMm, PHOSPHOR_ICON_VIEWBOX)
     }
 
     symbolGeom.computeVertexNormals()
